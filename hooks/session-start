@@ -1,0 +1,59 @@
+#!/bin/sh
+# hooks/session-start — ARCA.CSR 会话启动时自动执行
+# 启动 r1r2-bsk daemon 并检测 Chrome 扩展连接状态
+set -e
+
+PLUGIN_ROOT="${ARCA_DSR_PLUGIN_ROOT:-.}"
+# BSK_HOME 默认放在插件包目录内，避免 HOME 目录的 sandbox 权限限制（~/.bsk 创建失败）
+R1R2_BSK_HOME="${R1R2_BSK_HOME:-${PLUGIN_ROOT}/.bsk-home}"
+
+# 检测当前平台，选择对应二进制
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m)"
+case "$arch" in
+  aarch64|arm64) arch="arm64" ;;
+  x86_64|amd64) arch="x64" ;;
+esac
+
+BSK="${PLUGIN_ROOT}/bin/r1r2-bsk-${os}-${arch}"
+
+# Windows 特殊处理
+if [ "${OS:-}" = "Windows_NT" ]; then
+  BSK="${PLUGIN_ROOT}/bin/r1r2-bsk-windows-x64.exe"
+fi
+
+# 1. 确保二进制可执行 + 创建统一符号链接
+if [ -f "$BSK" ]; then
+  chmod +x "$BSK" 2>/dev/null || true
+  # 创建 bin/r1r2-bsk 符号链接，供 MCP Server 统一引用
+  ln -sf "$(basename "$BSK")" "${PLUGIN_ROOT}/bin/r1r2-bsk" 2>/dev/null || true
+else
+  echo "[r1r2-browser-skill] ⚠️ r1r2-bsk 二进制不存在: ${BSK}"
+  echo "[r1r2-browser-skill] 请确保插件包已正确安装"
+  exit 0
+fi
+
+# 2. 设置环境变量
+export PATH="${PLUGIN_ROOT}/bin:${PATH}"
+export R1R2_BSK_HOME="${R1R2_BSK_HOME}"
+export BSK_HOME="${R1R2_BSK_HOME}"
+
+# 3. 启动 daemon（幂等，已运行则跳过）
+if ! "$BSK" status --json 2>/dev/null | grep -q '"daemon"'; then
+  "$BSK" daemon start 2>/dev/null || {
+    echo "[r1r2-browser-skill] ⚠️ daemon 启动失败，请手动执行: r1r2-bsk daemon start"
+    exit 0
+  }
+fi
+
+# 4. 检测 Chrome 扩展
+if "$BSK" doctor --json 2>/dev/null | grep -q '"extension_connected".*true'; then
+  echo "[r1r2-browser-skill] ✅ daemon 运行中 + Chrome 扩展已连接"
+else
+  echo "[r1r2-browser-skill] ⚠️ Chrome 扩展未连接"
+  echo "[r1r2-browser-skill] 请安装浏览器扩展："
+  echo "[r1r2-browser-skill]   Chrome: https://chromewebstore.google.com/detail/hhcmgoofomhgciiibhipgmgkgnoenaoi"
+  echo "[r1r2-browser-skill]   Edge:   https://microsoftedge.microsoft.com/addons/detail/browserskill/emacgiaaaiojkkpkddmmdfhmokgmnikg"
+fi
+
+exit 0
