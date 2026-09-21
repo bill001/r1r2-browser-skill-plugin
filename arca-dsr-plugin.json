@@ -1,0 +1,29 @@
+{
+  "name": "r1r2-browser-skill",
+  "version": "0.3.0",
+  "description": "R1R2 浏览器技能 — 让 AI Agent 操作你已登录的浏览器：填写表单、审核资料、采集数据",
+  "homepage": "https://github.com/r1r2/r1r2-browser-skill-plugin",
+  "repository": "https://github.com/r1r2/r1r2-browser-skill-plugin",
+  "skills": [
+    "skills/r1r2-browser-skill"
+  ],
+  "hooks": {
+    "session-start": [
+      {
+        "command": "hooks/session-start",
+        "description": "启动 r1r2-bsk daemon 并检测 Chrome 扩展",
+        "timeout": 10
+      }
+    ]
+  },
+  "mcpServers": {
+    "r1r2-browserskill": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "env": {
+        "R1R2_BSK_PATH": "bin/r1r2-bsk"
+      }
+    }
+  }
+}
