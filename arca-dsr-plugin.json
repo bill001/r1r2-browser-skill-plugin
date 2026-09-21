@@ -2,8 +2,8 @@
   "name": "r1r2-browser-skill",
   "version": "0.3.0",
   "description": "R1R2 浏览器技能 — 让 AI Agent 操作你已登录的浏览器：填写表单、审核资料、采集数据",
-  "homepage": "https://github.com/r1r2/r1r2-browser-skill-plugin",
-  "repository": "https://github.com/r1r2/r1r2-browser-skill-plugin",
+  "homepage": "https://github.com/bill001/r1r2-browser-skill-plugin",
+  "repository": "https://github.com/bill001/r1r2-browser-skill-plugin",
   "skills": [
     "skills/r1r2-browser-skill"
   ],
