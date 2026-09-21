@@ -1,0 +1,25 @@
+{
+  "name": "@r1r2/browser-skill-mcp-server",
+  "version": "0.3.0",
+  "description": "R1R2 浏览器技能 MCP Server — 将 r1r2-bsk CLI 封装为 6 个 browser_* MCP tools",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --out-dir dist --clean",
+    "start": "node dist/index.mjs",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "tsdown": "^0.12.5",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
+  },
+  "author": "重庆人一人二网络科技有限公司",
+  "license": "MIT"
+}
