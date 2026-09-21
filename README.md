@@ -16,7 +16,7 @@ Agent 可以填写表单、审核资料、采集数据——一切都在独立�
 
 粘贴本仓库 GitHub URL：
 ```
-https://github.com/r1r2/r1r2-browser-skill-plugin
+https://github.com/bill001/r1r2-browser-skill-plugin
 ```
 
 点击安装即可。插件包会自动下载 `r1r2-bsk` CLI 二进制和 MCP Server。
