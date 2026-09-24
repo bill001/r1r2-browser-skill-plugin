@@ -13,7 +13,13 @@ BSK_REPO="Tencent/BrowserSkill"          # 上游二进制来源
 BSK_VERSION="${BSK_VERSION:-0.3.0}"
 
 # ── 1. 平台检测 ─────────────────────────────────────────────
-os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+# Windows（Git Bash / MSYS / MINGW）下 uname -s 为 MINGW*_NT* / MSYS*_NT*，
+# 且环境变量 OS=Windows_NT。优先用 OS 判定，避免被 uname 干扰。
+if [ "${OS:-}" = "Windows_NT" ] || echo "${uname_out:-}" | grep -qiE 'mingw|msys|cygwin'; then
+  os="windows"
+else
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+fi
 arch="$(uname -m)"
 case "$arch" in
   aarch64 | arm64) arch="arm64" ;;
@@ -21,14 +27,20 @@ case "$arch" in
 esac
 
 case "$os-$arch" in
-  darwin-arm64)  triple="aarch64-apple-darwin" ;;
-  darwin-x64)    triple="x86_64-apple-darwin" ;;
-  linux-arm64)   triple="aarch64-unknown-linux-musl" ;;
-  linux-x64)     triple="x86_64-unknown-linux-musl" ;;
+  darwin-arm64)  triple="aarch64-apple-darwin" ; ext="tar.gz" ; bin_name="bsk" ;;
+  darwin-x64)    triple="x86_64-apple-darwin" ; ext="tar.gz" ; bin_name="bsk" ;;
+  linux-arm64)   triple="aarch64-unknown-linux-musl" ; ext="tar.gz" ; bin_name="bsk" ;;
+  linux-x64)     triple="x86_64-unknown-linux-musl" ; ext="tar.gz" ; bin_name="bsk" ;;
+  windows-x64)   triple="x86_64-pc-windows-msvc" ; ext="zip" ; bin_name="bsk.exe" ;;
   *) echo "不支持的平台: $os-$arch" >&2; exit 1 ;;
 esac
 
-BSK_BIN="r1r2-bsk-$os-$arch"
+# Windows 二进制带 .exe 后缀；其余平台无后缀
+if [ "$os" = "windows" ]; then
+  BSK_BIN="r1r2-bsk-windows-x64.exe"
+else
+  BSK_BIN="r1r2-bsk-$os-$arch"
+fi
 
 # ── 2. 下载二进制 ───────────────────────────────────────────
 BIN_DIR="${PLUGIN_ROOT}/bin"
@@ -37,16 +49,21 @@ mkdir -p "$BIN_DIR"
 if [ -f "${BIN_DIR}/${BSK_BIN}" ]; then
   echo "✓ 二进制已存在: ${BSK_BIN}"
 else
-  URL="https://github.com/${BSK_REPO}/releases/download/cli-v${BSK_VERSION}/bsk-v${BSK_VERSION}-${triple}.tar.gz"
+  URL="https://github.com/${BSK_REPO}/releases/download/cli-v${BSK_VERSION}/bsk-v${BSK_VERSION}-${triple}.${ext}"
   echo "→ 下载二进制: ${URL}"
   TMP="$(mktemp -d)"
-  curl -fSL --retry 3 -o "${TMP}/bsk.tar.gz" "$URL"
-  tar -xzf "${TMP}/bsk.tar.gz" -C "$BIN_DIR" bsk 2>/dev/null || tar -xzf "${TMP}/bsk.tar.gz" -C "$BIN_DIR"
-  # 重命名
-  if [ -f "${BIN_DIR}/bsk" ]; then
-    mv "${BIN_DIR}/bsk" "${BIN_DIR}/${BSK_BIN}"
+  if [ "$ext" = "zip" ]; then
+    curl -fSL --retry 3 -o "${TMP}/bsk.zip" "$URL"
+    unzip -o "${TMP}/bsk.zip" -d "$BIN_DIR" >/dev/null 2>&1 || unzip -o "${TMP}/bsk.zip" -d "$BIN_DIR"
+  else
+    curl -fSL --retry 3 -o "${TMP}/bsk.tar.gz" "$URL"
+    tar -xzf "${TMP}/bsk.tar.gz" -C "$BIN_DIR" "$bin_name" 2>/dev/null || tar -xzf "${TMP}/bsk.tar.gz" -C "$BIN_DIR"
   fi
-  chmod +x "${BIN_DIR}/${BSK_BIN}"
+  # 重命名（上游产物可能为 bsk / bsk.exe，统一到 BSK_BIN）
+  if [ -f "${BIN_DIR}/${bin_name}" ]; then
+    mv -f "${BIN_DIR}/${bin_name}" "${BIN_DIR}/${BSK_BIN}"
+  fi
+  chmod +x "${BIN_DIR}/${BSK_BIN}" 2>/dev/null || true
   rm -rf "$TMP"
   echo "✓ 二进制已安装: ${BSK_BIN}"
 fi
